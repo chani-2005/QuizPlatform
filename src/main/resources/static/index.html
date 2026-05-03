@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>כניסה לחידון</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f6; text-align: center; padding-top: 80px; }
+        .container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: inline-block; width: 350px; }
+        h1 { color: #2c3e50; margin-bottom: 25px; }
+        input { display: block; width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; transition: background 0.3s; }
+        button:hover { background-color: #2980b9; }
+    </style>
+</head>
+<body>
+
+<div id="quiz-container" class="container">
+    <h1>הצטרפות לחידון</h1>
+    <input type="number" id="quizCode" placeholder="הכנס קוד חידון">
+    <input type="text" id="playerName" placeholder="הכנס שם תצוגה">
+    <button onclick="joinQuiz()">הצטרף עכשיו</button>
+</div>
+
+<script>
+    let currentQuizCode = null;
+
+    function joinQuiz() {
+        const code = document.getElementById('quizCode').value;
+        const name = document.getElementById('playerName').value;
+
+        if(!code || !name) {
+            alert("חובה להזין קוד חידון ושם");
+            return;
+        }
+
+        // שלב 1: הצטרפות לחידון
+        fetch(`/api/join?code=${code}&name=${name}`, { method: 'POST' })
+            .then(response => response.text())
+            .then(message => {
+                if (message.includes("בהצלחה")) {
+                    currentQuizCode = code;
+                    loadQuestion(code); // שלב 2: אם הצלחנו, טוענים את השאלה
+                } else {
+                    alert(message);
+                }
+            })
+            .catch(err => alert("שגיאה בחיבור לשרת"));
+    }
+
+    function loadQuestion(code) {
+        fetch(`/api/question?code=${code}`)
+            .then(response => response.json())
+            .then(question => {
+                // החלפת התוכן של התיבה המרכזית בשאלה ותשובות
+                document.getElementById('quiz-container').innerHTML = `
+                <h2>${question.questionText}</h2>
+                <div style="display: grid; gap: 10px;">
+                    <button onclick="checkAnswer(1)">${question.answer1}</button>
+                    <button onclick="checkAnswer(2)">${question.answer2}</button>
+                    <button onclick="checkAnswer(3)">${question.answer3}</button>
+                    <button onclick="checkAnswer(4)">${question.answer4}</button>
+                </div>
+            `;
+            })
+            .catch(err => alert("לא הצלחנו לטעון את השאלה"));
+    }
+
+    function checkAnswer(answerNum) {
+        alert("בחרת בתשובה: " + answerNum + ". בשלב הבא נבדוק אם זה נכון!");
+    }
+</script>
+</body>
+</html>
