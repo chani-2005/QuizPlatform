@@ -1,22 +1,29 @@
 package controllers;
 
-import models.Question;
+import Entity.Player;
+import Entity.Question;
+import repositories.PlayerRepository;
 import repositories.QuestionRepository;
 import services.PlayerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
 public class QuizController {
 
     private final PlayerService playerService;
+    private final PlayerRepository playerRepository;
+    @Autowired
     private final QuestionRepository questionRepository;
 
-    @Autowired
-    public QuizController(PlayerService playerService, QuestionRepository questionRepository) {
+
+    public QuizController(PlayerService playerService, QuestionRepository questionRepository, PlayerRepository playerRepository) {
         this.playerService = playerService;
         this.questionRepository = questionRepository;
+        this.playerRepository = playerRepository;
     }
 
     @GetMapping("/")
@@ -26,12 +33,46 @@ public class QuizController {
     }
 
     @PostMapping("/join")
-    public String join(@RequestParam("code") int code, @RequestParam("name") String name) {
-        return playerService.joinQuiz(code, name, "");
+    public String joinPlayer(@RequestParam String playerName, @RequestParam int gameId, @RequestParam String imagePath) {
+        // בדיקה אם השחקן כבר קיים, ואם לא - יצירה שלו
+        if (playerRepository.findByDisplayName(playerName) == null) {
+            Player newPlayer = new Player(gameId, playerName, imagePath);
+            playerRepository.addPlayer(newPlayer);
+        }
+        return "Player joined successfully";
+    }
+
+    @PostMapping("/submitAnswer")
+    public String submitAnswer(
+            @RequestParam("code") int code,
+            @RequestParam("answerText") String answerText,
+            @RequestParam("playerName") String playerName,
+            @RequestParam("index") int index) {
+
+        // 1. שליפת רשימת השאלות של החידון הספציפי
+        List<Question> questions = questionRepository.getQuestionsByQuizCode(code);
+
+        // בדיקת תקינות האינדקס
+        if (questions == null || index < 0 || index >= questions.size()) {
+            return "finished";
+        }
+        Question currentQ = questions.get(index);
+        Player currentP = playerRepository.findByDisplayName(playerName);
+        if (answerText.equals(currentQ.getAns1())) {
+            if(currentP != null)
+                currentP.setScore(currentP.getScore() + currentQ.getPoints());
+            return "correct";
+        } else {
+            return "wrong";
+        }
     }
 
     @GetMapping("/question")
-    public Question getFirstQuestion(@RequestParam("code") int code) {
-        return questionRepository.getQuestionsByQuizCode(code).get(0);
+    public Question getQuestion(@RequestParam("code") int code, @RequestParam("index") int index) {
+        List<Question> questions = questionRepository.getQuestionsByQuizCode(code);
+        System.out.println("Request for code: " + code + ", Found questions: " + questions.size());
+        if(index >= 0 && index < questions.size())
+            return questions.get(index);
+        return null;
     }
 }

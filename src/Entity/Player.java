@@ -1,17 +1,36 @@
-package models;
+package Entity;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "players")
 public class Player {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
     private int gameId;
     private String displayName;
     private String imagePath;
     private int score;
+    private long totalResponseTime;
+
+    public Player() {
+    }
 
     public Player(int gameId, String displayName, String imagePath) {
         this.gameId = gameId;
         this.displayName = displayName;
         this.imagePath = imagePath;
         this.score = 0;
+        this.totalResponseTime = 0;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public int getGameId() {
@@ -44,5 +63,13 @@ public class Player {
 
     public void setScore(int score) {
         this.score = score;
+    }
+
+    public long getTotalResponseTime() {
+        return totalResponseTime;
+    }
+
+    public void setTotalResponseTime(long totalResponseTime) {
+        this.totalResponseTime = totalResponseTime;
     }
 }

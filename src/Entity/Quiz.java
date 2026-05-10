@@ -1,9 +1,12 @@
-package models;
+package Entity;
 
-
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "quizzes")
 public class Quiz {
+    @Id
     private int quizCode;
     private String quizName;
     private String creatorEmail;
@@ -11,6 +14,8 @@ public class Quiz {
     private LocalDateTime endTime;
     private String winnerName;
     private int winnerScore;
+
+    public Quiz(){}
 
     public Quiz(int quizCode, String quizName, String creatorEmail, LocalDateTime startTime, LocalDateTime endTime) {
         this.quizCode = quizCode;

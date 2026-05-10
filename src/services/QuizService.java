@@ -1,6 +1,6 @@
 package services;
 
-import models.Quiz;
+import Entity.Quiz;
 import org.springframework.stereotype.Service;
 import repositories.QuizRepository;
 

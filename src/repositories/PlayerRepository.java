@@ -1,26 +1,14 @@
 package repositories;
 
-import models.Player;
+import Entity.Player;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.ArrayList;
 import java.util.List;
 
 @Repository
-public class PlayerRepository {
-    private List<Player> players = new ArrayList<>();
+public interface PlayerRepository extends JpaRepository<Player, Integer> {
 
-    public void addPlayer(Player player) {
-        players.add(player);
-    }
+    List<Player> findByGameId(int gameId);
 
-    public List<Player> getPlayersByGameId(int gameId) {
-        List<Player> gamePlayers = new ArrayList<>();
-        for (Player p : players) {
-            if (p.getGameId() == gameId) {
-                gamePlayers.add(p);
-            }
-        }
-        return gamePlayers;
-    }
+    Player findByDisplayName(String displayName);
 }

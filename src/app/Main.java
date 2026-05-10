@@ -1,7 +1,8 @@
 package app;
 
-import models.Quiz;
+import Entity.Quiz;
 import repositories.QuizRepository;
+import services.ExcelService; // ודאי שזה השם של השירות שלך
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -10,24 +11,33 @@ import org.springframework.context.annotation.ComponentScan;
 import java.time.LocalDateTime;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"services", "repositories", "models", "controllers"})
+@ComponentScan(basePackages = {"services", "repositories", "Entity", "controllers"})
 public class Main {
     public static void main(String[] args) {
-        // שומרים את ה-Context כדי שנוכל לגשת למאגרים
+        // 1. הרצת האפליקציה וקבלת ה-Context
         ApplicationContext context = SpringApplication.run(Main.class, args);
 
-        // יצירת חידון בדיקה כדי שנוכל להצטרף אליו
+        // 2. יצירת חידון בדיקה (כדי שנוכל להקיש קוד 101 ב-HTML)
         QuizRepository quizRepo = context.getBean(QuizRepository.class);
-        // יצירת זמנים לבדיקה: התחיל לפני שעה, מסתיים בעוד שעה
         LocalDateTime start = LocalDateTime.now().minusHours(1);
         LocalDateTime end = LocalDateTime.now().plusHours(1);
 
-// יצירת החידון עם כל הפרמטרים: קוד, שם, אימייל, זמן התחלה, זמן סיום
         Quiz testQuiz = new Quiz(101, "חידון בדיקה", "admin@test.com", start, end);
         quizRepo.addQuiz(testQuiz);
 
+        // 3. טעינת השאלות מהאקסל באופן אוטומטי
+        try {
+            ExcelService excelService = context.getBean(ExcelService.class);
+            // כאן את קוראת לפונקציה שקיימת אצלך בשירות (למשל loadQuestionsFromExcel)
+            // ודאי שהנתיב לקובץ האקסל נכון
+            excelService.loadQuestionsFromExcel("question.xlsx", 101);
+            System.out.println("--- השאלות מהאקסל נטענו בהצלחה ---");
+        } catch (Exception e) {
+            System.out.println("!!! שגיאה בטעינת האקסל: " + e.getMessage());
+        }
+
         System.out.println("--- השרת עלה בהצלחה ---");
-        System.out.println("חידון בדיקה נוצר עם קוד: 101");
-        System.out.println("ניתן לגשת לכתובת: http://localhost:8080/index.html");
+        System.out.println("חידון פעיל בקוד: 101");
+        System.out.println("כתובת למעבר: http://localhost:8080/index.html");
     }
 }

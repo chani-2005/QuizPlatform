@@ -1,12 +1,19 @@
-package models;
+package Entity;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "questions")
 public class Question {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int questionId;
-    private int quizId;
+    @ManyToOne
+    @JoinColumn(name = "quiz_id")
+    private Quiz quiz;
     private String content;
     private String ans1;
     private String ans2;
@@ -15,10 +22,12 @@ public class Question {
     private int timeLimit;
     private int difficulty;
     private int points;
+    private String correctAnswerText;
 
-    public Question(int questionId, int quizId, String content, String ans1, String ans2, String ans3, String ans4, int timeLimit, int difficulty, int points) {
-        this.questionId = questionId;
-        this.quizId = quizId;
+    public Question() {}
+
+    public Question(Quiz quiz , String content, String ans1, String ans2, String ans3, String ans4, int timeLimit, int difficulty, int points) {
+        this.quiz = quiz;
         this.content = content;
         this.ans1 = ans1;
         this.ans2 = ans2;
@@ -27,6 +36,7 @@ public class Question {
         this.timeLimit = timeLimit;
         this.difficulty = difficulty;
         this.points = points;
+        this.correctAnswerText = ans1;
     }
 
     public int getQuestionId() {
@@ -37,12 +47,12 @@ public class Question {
         this.questionId = questionId;
     }
 
-    public int getQuizId() {
-        return quizId;
+    public Quiz getQuiz() {
+        return quiz;
     }
 
-    public void setQuizId(int quizId) {
-        this.quizId = quizId;
+    public void setQuiz(Quiz quiz) {
+        this.quiz = quiz;
     }
 
     public String getContent() {
@@ -107,6 +117,14 @@ public class Question {
 
     public void setPoints(int points) {
         this.points = points;
+    }
+
+    public String getCorrectAnswerText() {
+        return correctAnswerText;
+    }
+
+    public void setCorrectAnswerText(String correctAnswerText) {
+        this.correctAnswerText = correctAnswerText;
     }
 
     public List<String> getShuffledAnswers() {

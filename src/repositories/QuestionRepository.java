@@ -1,34 +1,13 @@
 package repositories;
 
-import models.Question;
+import Entity.Question;
+import Entity.Quiz;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
-public class QuestionRepository {
+public interface QuestionRepository extends JpaRepository<Question, Integer> {
 
-    private List<Question> questions = new ArrayList<>();
-
-    public void addQuestion(Question question) {
-        questions.add(question);
-    }
-
-    public List<Question> getQuestionsByQuizCode(int quizCode) {
-        return questions.stream()
-                .filter(q -> q.getQuizId() == quizCode)
-                .collect(Collectors.toList());
-    }
-
-    public List<Question> getQuestionsByQuizId(int quizId){
-        List<Question> quizQuestions = new ArrayList<>();
-        for (Question q : questions) {
-            if(q.getQuizId() == quizId){
-                quizQuestions.add(q);
-            }
-        }
-        return quizQuestions;
-    }
+    List<Question> findByQuiz(Quiz quiz);
 }
