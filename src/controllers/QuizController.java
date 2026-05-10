@@ -2,77 +2,84 @@ package controllers;
 
 import Entity.Player;
 import Entity.Question;
+import Entity.Quiz;
 import repositories.PlayerRepository;
 import repositories.QuestionRepository;
+import repositories.QuizRepository;
 import services.PlayerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import services.QuizService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api")
 public class QuizController {
 
-    private final PlayerService playerService;
-    private final PlayerRepository playerRepository;
     @Autowired
-    private final QuestionRepository questionRepository;
+    private PlayerService playerService;
+    @Autowired
+    private QuizService quizService;
+    @Autowired
+    private PlayerRepository playerRepository;
+    @Autowired
+    private QuestionRepository questionRepository;
+    @Autowired
+    private QuizRepository quizRepository;
+    @Autowired
+    private services.ExcelService excelService;
 
-
-    public QuizController(PlayerService playerService, QuestionRepository questionRepository, PlayerRepository playerRepository) {
-        this.playerService = playerService;
-        this.questionRepository = questionRepository;
-        this.playerRepository = playerRepository;
-    }
 
     @GetMapping("/")
     public String welcome() {
-        return "<h1>ברוכים הבאים למערכת החידונים האינטרנטית!</h1>" +
-                "<p>השרת עובד לפי המפרט של פרויקט הסיום.</p>";
+        return "<h1>ברוכים הבאים למערכת החידונים האינטרנטית!</h1>";
     }
 
     @PostMapping("/join")
     public String joinPlayer(@RequestParam String playerName, @RequestParam int gameId, @RequestParam String imagePath) {
-        // בדיקה אם השחקן כבר קיים, ואם לא - יצירה שלו
-        if (playerRepository.findByDisplayName(playerName) == null) {
-            Player newPlayer = new Player(gameId, playerName, imagePath);
-            playerRepository.addPlayer(newPlayer);
-        }
-        return "Player joined successfully";
+        return playerService.joinQuiz(gameId, playerName, imagePath);
     }
 
     @PostMapping("/submitAnswer")
-    public String submitAnswer(
-            @RequestParam("code") int code,
-            @RequestParam("answerText") String answerText,
-            @RequestParam("playerName") String playerName,
-            @RequestParam("index") int index) {
+    public String submitAnswer(@RequestParam("quizId") int quizId, @RequestParam("answerText") String answerText, @RequestParam("playerName") String playerName, @RequestParam("questionId") int questionId, @RequestParam("timeTaken") long timeTaken) {
+        boolean isCorrect = playerService.checkAndSubmitAnswer(playerName, quizId, questionId, answerText, timeTaken);
 
-        // 1. שליפת רשימת השאלות של החידון הספציפי
-        List<Question> questions = questionRepository.getQuestionsByQuizCode(code);
+        return isCorrect ? "correct" : "wrong";
+    }
 
-        // בדיקת תקינות האינדקס
-        if (questions == null || index < 0 || index >= questions.size()) {
-            return "finished";
-        }
-        Question currentQ = questions.get(index);
-        Player currentP = playerRepository.findByDisplayName(playerName);
-        if (answerText.equals(currentQ.getAns1())) {
-            if(currentP != null)
-                currentP.setScore(currentP.getScore() + currentQ.getPoints());
-            return "correct";
-        } else {
-            return "wrong";
+    @GetMapping("/questions")
+    public List<Question> getQuizQuestions(@RequestParam("quizId") int quizId) {
+        return playerService.getQuestionsForQuiz(quizId);
+    }
+
+    @GetMapping("/load-data")
+    public String loadData() {
+        try {
+            // מחיקת נתונים ישנים כדי להתחיל נקי (אופציונלי)
+            // questionRepository.deleteAll();
+
+            LocalDateTime now = LocalDateTime.now();
+            Quiz quiz = new Quiz();
+            quiz.setQuizCode(1); // אנחנו מכריחים אותו להיות 1
+            quiz.setQuizName("חידון כללי");
+            quiz.setCreatorEmail("test@gmail.com");
+            quiz.setStartTime(LocalDateTime.now());
+            quiz.setEndTime(LocalDateTime.now().plusDays(1));
+
+            quizRepository.save(quiz);
+
+            excelService.loadQuestionsFromExcel("question.xlsx", 1);
+
+            return "הנתונים נטענו בהצלחה! הקוד שלך הוא 1";
+        } catch (Exception e) {
+            return "שגיאה: " + e.getMessage();
         }
     }
 
-    @GetMapping("/question")
-    public Question getQuestion(@RequestParam("code") int code, @RequestParam("index") int index) {
-        List<Question> questions = questionRepository.getQuestionsByQuizCode(code);
-        System.out.println("Request for code: " + code + ", Found questions: " + questions.size());
-        if(index >= 0 && index < questions.size())
-            return questions.get(index);
-        return null;
+    @GetMapping("/leaderboard")
+    public List<Player> getLeaderboard(@RequestParam int quizId) {
+        return playerService.getLeaderboard(quizId);
     }
 }

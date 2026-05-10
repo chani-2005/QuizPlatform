@@ -47,12 +47,11 @@ public class PlayerService {
 
     public List<Question> getQuestionsForQuiz(int quizId) {
         Quiz quiz = quizRepository.findById(quizId).orElse(null);
-        if (quiz != null)
+        if (quiz == null)
             return new ArrayList<>();
         List<Question> questions = questionRepository.findByQuiz(quiz);
         Collections.shuffle(questions);
         return questions;
-
     }
 
     public List<String> getShuffledAnswers(Question question) {
@@ -75,4 +74,29 @@ public class PlayerService {
         });
         return players;
     }
+
+    public boolean checkAndSubmitAnswer(String playerName, int quizId, int questionId, String answerText, long timeTaken) {
+        // 1. מוצאים את השאלה כדי לדעת מה התשובה הנכונה
+        Question question = questionRepository.findById(questionId).orElse(null);
+        if (question == null) return false;
+
+        // 2. בדיקה מול ans1 (שם האקסל תמיד שם את התשובה הנכונה)
+        boolean isCorrect = question.getAns1().trim().equalsIgnoreCase(answerText.trim());
+
+        // 3. מוצאים את השחקן בחידון הספציפי
+        Player player = playerRepository.findByDisplayName(playerName);
+
+        if (player != null) {
+            if (isCorrect) {
+                // הוספת 10 נקודות על תשובה נכונה
+                player.setScore(player.getScore() + 10);
+            }
+            // עדכון זמן מצטבר (חשוב לשובר שוויון במפרט!)
+            player.setTotalResponseTime(player.getTotalResponseTime() + timeTaken);
+            playerRepository.save(player);
+        }
+
+        return isCorrect;
+    }
+
 }
