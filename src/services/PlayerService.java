@@ -29,6 +29,9 @@ public class PlayerService {
             return "החידון סגור כרגע";
         }
         Player newPlayer = new Player(quizCode, name, imagePath);
+        if (playerRepository.existsByDisplayNameAndGameId(newPlayer.getDisplayName(), newPlayer.getGameId())) {
+            return "משתמש קיים בחר שם אחר";
+        }
         playerRepository.save(newPlayer);
         return "הצטרפת בהצלחה!";
     }
@@ -76,22 +79,17 @@ public class PlayerService {
     }
 
     public boolean checkAndSubmitAnswer(String playerName, int quizId, int questionId, String answerText, long timeTaken) {
-        // 1. מוצאים את השאלה כדי לדעת מה התשובה הנכונה
         Question question = questionRepository.findById(questionId).orElse(null);
-        if (question == null) return false;
+        if (question == null)
+            return false;
 
-        // 2. בדיקה מול ans1 (שם האקסל תמיד שם את התשובה הנכונה)
         boolean isCorrect = question.getAns1().trim().equalsIgnoreCase(answerText.trim());
-
-        // 3. מוצאים את השחקן בחידון הספציפי
         Player player = playerRepository.findByDisplayName(playerName);
 
         if (player != null) {
             if (isCorrect) {
-                // הוספת 10 נקודות על תשובה נכונה
-                player.setScore(player.getScore() + 10);
+                player.setScore(player.getScore() + question.getPoints());
             }
-            // עדכון זמן מצטבר (חשוב לשובר שוויון במפרט!)
             player.setTotalResponseTime(player.getTotalResponseTime() + timeTaken);
             playerRepository.save(player);
         }

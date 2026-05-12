@@ -1,0 +1,89 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="he" dir="rtl">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>מערכת ניהול חידונים</title>-->
+<!--    <style>-->
+<!--        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; text-align: center; }-->
+<!--        .admin-container { background: white; max-width: 800px; margin: auto; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }-->
+<!--        .quiz-item { border-bottom: 1px solid #eee; padding: 15px; display: flex; justify-content: space-between; align-items: center; }-->
+<!--        .btn-update { background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }-->
+<!--        input[type="text"], input[type="datetime-local"] { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #ddd; }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="admin-container">-->
+<!--    <h1>ניהול מנהל</h1>-->
+<!--    <div id="login-form">-->
+<!--        <input type="email" id="admin-email" placeholder="הזן כתובת מייל מנהל">-->
+<!--        <button onclick="fetchQuizzes()" class="btn-update">הצג חידונים שלי</button>-->
+<!--    </div>-->
+
+<!--    <div id="quiz-list-container" style="display:none; margin-top: 20px;">-->
+<!--        <h3>החידונים שלך:</h3>-->
+<!--        <div id="quizzes"></div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--<script>-->
+<!--    function fetchQuizzes() {-->
+<!--        const email = document.getElementById('admin-email').value;-->
+<!--        fetch(`/api/my-quizzes?email=${email}`)-->
+<!--            .then(res => res.json())-->
+<!--            .then(data => {-->
+<!--                const container = document.getElementById('quizzes');-->
+<!--                const listSection = document.getElementById('quiz-list-container');-->
+<!--                container.innerHTML = '';-->
+<!--                listSection.style.display = 'block';-->
+
+<!--                data.forEach(quiz => {-->
+<!--                    container.innerHTML += `-->
+<!--                            <div class="quiz-item">-->
+<!--                                <span><b>${quiz.quizName}</b> (קוד: ${quiz.quizCode})</span>-->
+<!--                                <button class="btn-update" onclick="openEdit(${quiz.quizCode})">עדכן</button>-->
+<!--                            </div>-->
+<!--                        `;-->
+<!--                });-->
+<!--            });-->
+<!--    }-->
+
+<!--    function openEdit(code) {-->
+<!--        const deleteOld = confirm("האם ברצונך למחוק את השאלות הקיימות? (אישור למחיקה, ביטול להוספה על הקיים)");-->
+<!--        // כאן תבוא הלוגיקה של עדכון הזמן והעלאת האקסל-->
+<!--        alert("מבצע עדכון לחידון " + code + ". בחירת מחיקה: " + deleteOld);-->
+<!--    }-->
+
+<!--    function editQuiz(code) {-->
+<!--        // 1. שאלה לגבי השאלות (סעיף 14 במפרט) -->
+<!--        const shouldDelete = confirm("האם ברצונך למחוק את השאלות הקיימות? (אישור למחיקה, ביטול להוספה על הקיים)");-->
+
+<!--        // 2. קבלת נתונים חדשים מהמשתמש-->
+<!--        const newName = prompt("הכנס שם חידון חדש:");-->
+<!--        const newStart = prompt("הכנס זמן התחלה (פורמט: YYYY-MM-DDTHH:MM):", "2024-05-12T10:00");-->
+<!--        const newEnd = prompt("הכנס זמן סיום (פורמט: YYYY-MM-DDTHH:MM):", "2024-05-12T12:00");-->
+
+<!--        if (newName && newStart && newEnd) {-->
+<!--            // בניית הבקשה לשרת-->
+<!--            const params = new URLSearchParams({-->
+<!--                quizCode: code,-->
+<!--                name: newName,-->
+<!--                start: newStart,-->
+<!--                end: newEnd,-->
+<!--                deleteExisting: shouldDelete // כאן אנחנו מעבירים את מה שבחרת ב-confirm-->
+<!--            });-->
+
+<!--            // שליחה ל-Backend שכתבנו קודם-->
+<!--            fetch(`/api/update-quiz-details?${params.toString()}`, { method: 'POST' })-->
+<!--                .then(res => res.text())-->
+<!--                .then(msg => {-->
+<!--                    alert("תגובת המערכת: " + msg);-->
+<!--                    location.reload(); // רענון הדף כדי לראות את השינויים-->
+<!--                })-->
+<!--                .catch(err => alert("שגיאה בתקשורת עם השרת"));-->
+<!--        } else {-->
+<!--            alert("העדכון בוטל - לא הוזנו כל הפרטים");-->
+<!--        }-->
+<!--    }-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->

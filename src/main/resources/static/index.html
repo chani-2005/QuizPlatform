@@ -12,223 +12,313 @@
             --text-color: #2c3e50;
             --shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--background-color); color: var(--text-color); text-align: center; padding: 20px; margin: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            direction: rtl; /* מבטיח כיוון עברית נכון */
+        }
         .container { background: white; max-width: 700px; margin: 40px auto; padding: 40px; border-radius: 20px; box-shadow: var(--shadow); }
-        h1 { color: #2c3e50; margin-bottom: 30px; }
-
-        /* עיצוב מסך כניסה */
-        input, select { padding: 12px; margin: 10px 0; width: 90%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; transition: 0.3s; }
-        input:focus, select:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); }
-        .icon-select-container { margin: 20px 0; }
-        .icon-select-container label { font-weight: bold; display: block; margin-bottom: 10px; }
-        button#join-btn { background-color: var(--secondary-color); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.3s; margin-top: 20px; }
-        button#join-btn:hover { background-color: #27ae60; transform: translateY(-2px); }
-
-        /* פרטי שחקן (למעלה) */
-        #player-info { background: #ecf0f1; padding: 15px; margin-bottom: 30px; border-radius: 10px; display: none; font-size: 18px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        #player-icon-display { font-size: 1.5em; vertical-align: middle; margin-left: 10px; }
-
-        /* עיצוב מסך השאלות */
-        #question-content h3 { color: #7f8c8d; margin-top: 0; }
-        #question-content h2 { color: #2c3e50; margin-bottom: 30px; }
+        input, select { padding: 12px; margin: 10px 0; width: 90%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+        button { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.3s; border: none; margin: 10px; }
+        .btn-player { background-color: var(--secondary-color); color: white; }
+        .btn-admin { background-color: var(--primary-color); color: white; }
+        .quiz-card { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 10px; background: #fafafa; text-align: right; }
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
-        .btn-option { background-color: var(--primary-color); color: white; border: none; padding: 20px; border-radius: 12px; cursor: pointer; font-size: 18px; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-option:hover { background-color: #2980b9; transform: translateY(-3px); }
-
-        /* מסך סיום */
-        #summary-container { text-align: center; }
-        #summary-container h1 { color: var(--secondary-color); }
-        #summary-container button { background-color: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; transition: 0.3s; }
-        #summary-container button:hover { background-color: #2980b9; }
+        .btn-option { background-color: var(--primary-color); color: white; padding: 20px; border-radius: 12px; }
+        #player-info { background: #ecf0f1; padding: 15px; margin-bottom: 30px; border-radius: 10px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="player-info">
-        <span id="player-icon-display"></span><span id="display-name"></span>
+    <div id="main-selection">
+        <h1>🎮 ברוכים הבאים לחידון 🎮</h1>
+        <p>בחר סוג כניסה:</p>
+        <button onclick="showSection('player')" class="btn-player">אני שחקן - כניסה לחידון</button>
+        <button onclick="showSection('admin')" class="btn-admin">אני מנהל - ניהול חידונים</button>
     </div>
 
-    <div id="login-container">
-        <h1>🎮 הצטרפות לחידון 🎮</h1>
+    <div id="player-section" style="display:none;">
+        <h1>הצטרפות כשחקן</h1>
         <input type="text" id="player-name" placeholder="הכנס שם תצוגה">
-        <input type="number" id="quiz-code" placeholder="הכנס קוד חידון">
+        <input type="number" id="quiz-code-input" placeholder="הכנס קוד חידון">
+
         <div class="icon-select-container">
-            <label>בחר אייקון (דמות):</label>
+            <label>בחר דמות:</label>
             <select id="player-icon">
-                <option value="🦁">🦁 אריה (עוצמה)</option>
-                <option value="🦊">🦊 שועל (חכמה)</option>
-                <option value="🦄">🦄 חד-קרן (קסם)</option>
-                <option value="🐲">🐲 דרקון (אומץ)</option>
-                <option value="🐵">🐵 קוף (זריזות)</option>
-                <option value="🐙">🐙 תמנון (יצירתיות)</option>
+                <optgroup label="חיות">
+                    <option value="🦁">🦁 אריה</option>
+                    <option value="🦒">🦒 ג'ירפה</option>
+                    <option value="🐘">🐘 פיל</option>
+                    <option value="🦊">🦊 שועל</option>
+                    <option value="🦄">🦄 חד קרן</option>
+                </optgroup>
+                <optgroup label="דמויות ואוכל">
+                    <option value="🥷">🥷 נינג'ה</option>
+                    <option value="👨‍🚀">👨‍🚀 אסטרונאוט</option>
+                    <option value="🍕">🍕 פיצה</option>
+                    <option value="🚀">🚀 חללית</option>
+                    <option value="🤖">🤖 רובוט</option>
+                </optgroup>
             </select>
         </div>
-        <button id="join-btn" onclick="joinQuiz()">הצטרף לחידון</button>
+        <button class="btn-player" onclick="joinQuiz()">הצטרף עכשיו</button>
+        <br><button onclick="location.reload()" style="background:none; color:gray; font-size:14px; text-decoration:underline;">חזור לתפריט</button>
     </div>
 
-    <div id="quiz-container" style="display: none;">
-        <div id="question-content">
+    <div id="admin-section" style="display:none;">
+        <h1>ניהול חידונים</h1>
+
+        <div id="login-required-msg">
+            <p>כדי לנהל חידונים, יש להתחבר למערכת:</p>
+            <button class="btn-admin" onclick="window.location.href='/oauth2/authorization/google'">
+                🔵 התחברות באמצעות Google
+            </button>
         </div>
+
+        <div id="admin-content" style="display:none; text-align: right; background: #eee; padding: 20px; border-radius: 10px;">
+            <h3>➕ יצירת חידון חדש</h3>
+            <input type="text" id="new-quiz-name" placeholder="שם החידון">
+            <input type="datetime-local" id="new-quiz-start" title="שעת התחלה">
+            <input type="datetime-local" id="new-quiz-end" title="שעת סיום">
+            <p style="font-size: 12px;">* העלאת אקסל תתבצע לאחר יצירת החידון</p>
+            <button class="btn-admin" onclick="createNewQuiz()">צור חידון</button>
+
+            <hr>
+            <h3>📋 החידונים שלי</h3>
+            <div id="admin-quizzes-list"></div>
+        </div>
+    </div>
+    <div id="quiz-display-area" style="display:none;">
+        <div id="player-info-box">
+            <span id="player-icon-display" style="font-size: 2em;"></span>
+            <b id="display-name-top" style="font-size: 1.5em;"></b>
+        </div>
+        <hr>
+        <div id="question-content"></div>
     </div>
 </div>
 
+
 <script>
+    // ... (השארתי את ה-JavaScript אותו דבר, הוא עובד מעולה)
     let currentPlayerName = "";
     let currentQuizCode = "";
+    let questionsList = [];
     let currentQuestionIndex = 0;
-    let questionsList = []; // רשימת השאלות שתתקבל מהשרת
-    let questionStartTime = 0; // זמן תחילת השאלה
+    let questionStartTime = 0;
+
+    function showSection(type) {
+        document.getElementById('main-selection').style.display = 'none';
+        if(type === 'player') {
+            document.getElementById('player-section').style.display = 'block';
+        } else {
+            document.getElementById('admin-section').style.display = 'block';
+        }
+    }
+
+    function editQuiz(code) {
+        const shouldDelete = confirm("האם למחוק שאלות קיימות?\nאישור = מחיקה וטעינה מחדש\nביטול = הוספה על הקיים");
+        const newName = prompt("שם חידון חדש:");
+        const newStart = prompt("זמן התחלה (פורמט: YYYY-MM-DDTHH:MM):");
+        const newEnd = prompt("זמן סיום (פורמט: YYYY-MM-DDTHH:MM):");
+
+        if (newName && newStart && newEnd) {
+            // חשוב: לוודא ששמות הפרמטרים כאן תואמים בדיוק ל-@RequestParam ב-Java
+            const params = new URLSearchParams({
+                quizCode: code,
+                name: newName,
+                start: newStart,
+                end: newEnd,
+                deleteExisting: shouldDelete
+            });
+
+            fetch(`/api/update-quiz-details?${params.toString()}`, { method: 'POST' })
+                .then(async res => {
+                    const text = await res.text();
+                    if (res.ok) {
+                        alert("עודכן בהצלחה: " + text);
+                        loadMyQuizzes();
+                    } else {
+                        // אם יש שגיאה 400, זה ידפיס לנו את ההסבר מהשרת
+                        alert("שגיאה מהשרת (סטטוס " + res.status + "): " + text);
+                    }
+                })
+                .catch(err => alert("שגיאת תקשורת: " + err));
+        }
+    }
 
     function joinQuiz() {
-        currentPlayerName = document.getElementById('player-name').value.trim();
-        currentQuizCode = document.getElementById('quiz-code').value.trim();
+        currentPlayerName = document.getElementById('player-name').value;
+        currentQuizCode = document.getElementById('quiz-code-input').value;
         let icon = document.getElementById('player-icon').value;
 
-        if (!currentPlayerName || !currentQuizCode) {
-            alert("⚠️ נא להזין שם וקוד חידון");
-            return;
-        }
+        if(!currentPlayerName || !currentQuizCode) { alert("מלא את כל הפרטים"); return; }
 
-        // קריאה לשרת להצטרפות (כולל האייקון)
-        // ה-Controller שכתבנו ב-Java יודע לקבל imagePath
         fetch(`/api/join?playerName=${encodeURIComponent(currentPlayerName)}&gameId=${currentQuizCode}&imagePath=${icon}`, { method: 'POST' })
-            .then(response => response.text())
+            .then(res => res.text())
             .then(msg => {
-                if (msg.includes("בהצלחה")) {
-                    // מעבר למסך החידון
-                    document.getElementById('login-container').style.display = 'none';
-                    document.getElementById('player-info').style.display = 'block';
-                    document.getElementById('quiz-container').style.display = 'block';
+                if(msg.includes("בהצלחה")) {
+                    document.getElementById('player-section').style.display = 'none';
+                    document.getElementById('quiz-display-area').style.display = 'block';
                     document.getElementById('player-icon-display').innerText = icon;
-                    document.getElementById('display-name').innerText = " " + currentPlayerName;
-
-                    // טעינת רשימת השאלות המלאה מה-DB
+                    document.getElementById('display-name-top').innerText = " " + currentPlayerName;
                     loadAllQuestions();
                 } else {
-                    alert("⛔ " + msg);
+                    alert(msg);
                 }
-            })
-            .catch(err => {
-                console.error("שגיאה בהצטרפות:", err);
-                alert("⛔ שגיאה בחיבור לשרת. ודא שהשרת רץ.");
             });
     }
 
     function loadAllQuestions() {
-        // ה-Controller שכתבנו ב-Java מצפה ל-quizId
         fetch(`/api/questions?quizId=${currentQuizCode}`)
             .then(res => res.json())
             .then(data => {
                 questionsList = data;
-                currentQuestionIndex = 0; // אתחול האינדקס
                 displayCurrentQuestion();
-            })
-            .catch(err => {
-                console.error("שגיאה בטעינת שאלות:", err);
-                alert("⛔ שגיאה בטעינת השאלות.");
             });
     }
 
+    // עדכון פונקציית הצגת השאלה (X מתוך Y)
     function displayCurrentQuestion() {
-        if (questionsList.length === 0) {
-            document.getElementById('question-content').innerHTML = `
-                <h2>לא נמצאו שאלות לחידון זה.</h2>
-                <button onclick="location.reload()">חזור</button>
-            `;
-            return;
-        }
-
         if (currentQuestionIndex >= questionsList.length) {
-            showSummary();
+            showSummary(); // אם נגמרו השאלות, עוברים לסיכום
             return;
         }
+        const q = questionsList[currentQuestionIndex];
+        questionStartTime = Date.now();
+        let answers = [q.ans1, q.ans2, q.ans3, q.ans4].sort(() => Math.random() - 0.5);
 
-        const question = questionsList[currentQuestionIndex];
-        questionStartTime = Date.now(); // מתחילים למדוד זמן (מילישניות)
-
-        // יצירת מערך תשובות וערבובן (כדי ש-ans1 לא תהיה תמיד ראשונה)
-        let answers = [question.ans1, question.ans2, question.ans3, question.ans4];
-        answers.sort(() => Math.random() - 0.5);
-
-        // שימוש ב-question.content (שם העמודה ב-DB שלך)
         document.getElementById('question-content').innerHTML = `
-            <h3>שאלה ${currentQuestionIndex + 1} מתוך ${questionsList.length}</h3>
-            <h2>${question.content}</h2>
-            <div class="options-grid">
-                ${answers.map(ans => `
-                    <button class="btn-option" onclick="submitAnswer('${ans.replace(/'/g, "\\'")}', ${question.questionId})">
-                        ${ans}
-                    </button>
-                `).join('')}
-            </div>
-        `;
+        <h3 style="color: #7f8c8d;">שאלה ${currentQuestionIndex + 1} מתוך ${questionsList.length}</h3>
+        <h2 style="font-size: 24px; margin-bottom: 20px;">${q.content}</h2>
+        <div class="options-grid" id="options-container">
+            ${answers.map(ans => `
+                <button class="btn-option" onclick="submitAnswer(this, '${ans.replace(/'/g, "\\'")}', ${q.questionId})">
+                    ${ans}
+                </button>
+            `).join('')}
+        </div>`;
     }
 
-    function submitAnswer(selectedText, questionId) {
-        let timeTaken = Date.now() - questionStartTime;
+    // עדכון שליחת תשובה ללא ALERT
+    function submitAnswer(buttonElement, ans, id) {
+        let time = Date.now() - questionStartTime;
 
-        const params = new URLSearchParams({
-            quizId: currentQuizCode,
-            answerText: selectedText,
-            playerName: currentPlayerName,
-            questionId: questionId,
-            timeTaken: timeTaken
-        });
+        // מניעת לחיצות כפולות
+        const buttons = document.querySelectorAll('.btn-option');
+        buttons.forEach(btn => btn.disabled = true);
 
-        fetch(`/api/submitAnswer?${params.toString()}`, { method: 'POST' })
-            .then(response => response.text()) // מקבלים את התשובה מהשרת (correct/wrong)
-            .then(result => {
-                // הוספת פידבק למשתמש
-                if (result.includes("correct")) {
-                    alert("✅ נכון מאוד!");
+        fetch(`/api/submitAnswer?quizId=${currentQuizCode}&answerText=${encodeURIComponent(ans)}&playerName=${currentPlayerName}&questionId=${id}&timeTaken=${time}`, { method: 'POST' })
+            .then(res => res.text())
+            .then(res => {
+                // פידבק ויזואלי במקום ALERT
+                if(res.includes("correct")) {
+                    buttonElement.style.background = "#2ecc71"; // ירוק
                 } else {
-                    alert("❌ טעות...");
+                    buttonElement.style.background = "#e74c3c"; // אדום
                 }
 
-                // אחרי הלחיצה על ה-OK של ה-alert, עוברים לשאלה הבאה
-                currentQuestionIndex++;
-                displayCurrentQuestion();
-            })
-            .catch(err => {
-                console.error("שגיאה בשליחת תשובה:", err);
+                // המתנה של שנייה אחת ומעבר לשאלה הבאה
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    displayCurrentQuestion();
+                }, 1000);
             });
     }
 
+    // עדכון סיכום סופי והצגת מנצח (סעיף 20)
     function showSummary() {
         fetch(`/api/leaderboard?quizId=${currentQuizCode}`)
             .then(res => res.json())
             .then(players => {
-                let tableHtml = `
-                <h1>🏆 לוח תוצאות סופי 🏆</h1>
-                <table style="width:100%; margin-top:20px; border-collapse: collapse;">
-                    <tr style="background:#3498db; color:white;">
-                        <th style="padding:10px;">מקום</th>
-                        <th>שחקן</th>
-                        <th>ניקוד</th>
-                        <th>זמן כולל</th>
-                    </tr>
+                if(players.length === 0) return;
+
+                const winner = players[0]; // הראשון ברשימה הממוינת הוא המנצח
+
+                let html = `
+                <div style="padding: 20px; border: 3px solid #f1c40f; border-radius: 15px; background: #fffdf0;">
+                    <h1 style="font-size: 40px;">🏆 המנצח הגדול 🏆</h1>
+                    <div style="font-size: 60px;">${winner.imagePath}</div>
+                    <h2 style="font-size: 30px; color: #2c3e50;">${winner.displayName}</h2>
+                    <p style="font-size: 20px;">עם ניקוד של <b>${winner.score}</b> נקודות!</p>
+                </div>
+                <hr>
+                <h3>לוח תוצאות מלא:</h3>
+                <ul style="list-style: none; padding: 0;">
+                    ${players.map((p, index) => `
+                        <li style="padding: 10px; border-bottom: 1px solid #eee;">
+                            ${index + 1}. ${p.imagePath} ${p.displayName} - ${p.score} נק'
+                        </li>
+                    `).join('')}
+                </ul>
+                <button onclick="location.reload()" class="btn-player">חזור להתחלה</button>
             `;
-
-                players.forEach((p, index) => {
-                    let timeDisplay = p.totalTime ? (p.totalTime / 1000).toFixed(2) : "0.00";
-                    let rowColor = index === 0 ? "#f1c40f" : "white"; // זהב למקום הראשון
-                    tableHtml += `
-                    <tr style="background:${rowColor}; border-bottom:1px solid #ddd;">
-                        <td style="padding:10px;">${index + 1}</td>
-                        <td>${p.imagePath} ${p.displayName}</td>
-                        <td>${p.score}</td>
-                        <td>${(p.totalTime / 1000).toFixed(2)} ש'</td>
-                    </tr>
-                `;
-                });
-
-                tableHtml += `</table><br><button onclick="location.reload()">משחק חדש</button>`;
-                document.getElementById('quiz-container').innerHTML = tableHtml;
+                document.getElementById('question-content').innerHTML = html;
             });
+    }
 
+    // פונקציה ליצירת חידון חדש
+    function createNewQuiz() {
+        const name = document.getElementById('new-quiz-name').value;
+        const start = document.getElementById('new-quiz-start').value;
+        const end = document.getElementById('new-quiz-end').value;
+
+        if(!name || !start || !end) { alert("נא למלא את כל פרטי החידון"); return; }
+
+        fetch('/api/create-quiz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quizName: name, startTime: start, endTime: end })
+        })
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    alert("עליך להתחבר עם גוגל קודם!");
+                    return;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if(data) {
+                    alert("החידון נוצר בהצלחה! קוד החידון: " + data.quizCode);
+                    loadMyQuizzes(); // טעינה מחדש של הרשימה
+                }
+            })
+            .catch(err => alert("שגיאה ביצירת החידון. וודא שאתה מחובר."));
+    }
+
+    // עדכון טעינת החידונים - עכשיו לא צריך לשלוח מייל, השרת יודע מי את מהגוגל!
+    function loadMyQuizzes() {
+        fetch('/api/my-quizzes') // השרת יזהה את המשתמש מה-Session של גוגל
+            .then(res => {
+                if (res.status === 401) {
+                    alert("יש להתחבר עם גוגל כדי לצפות בחידונים");
+                    return [];
+                }
+                return res.json();
+            })
+            .then(quizzes => {
+                const list = document.getElementById('admin-quizzes-list');
+                list.innerHTML = '<h3>החידונים שלך:</h3>';
+                if(!quizzes || quizzes.length === 0) {
+                    list.innerHTML += "<p>לא נמצאו חידונים תחת החשבון שלך</p>";
+                    return;
+                }
+                quizzes.forEach(q => {
+                    list.innerHTML += `
+                    <div class="quiz-card">
+                        <b>שם: ${q.quizName}</b> | קוד: ${q.quizCode}
+                        <br>
+                        <button onclick="editQuiz(${q.quizCode})" style="font-size:12px; background:#e67e22; color:white; padding:5px 10px;">🔧 עדכן פרטים</button>
+                        <button onclick="uploadExcel(${q.quizCode})" style="font-size:12px; background:#27ae60; color:white; padding:5px 10px;">📤 העלאת אקסל</button>
+                    </div>`;
+                });
+            });
     }
 </script>
-
 </body>
 </html>

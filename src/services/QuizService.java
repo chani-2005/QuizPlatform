@@ -3,6 +3,7 @@ package services;
 import Entity.Quiz;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import repositories.QuestionRepository;
 import repositories.QuizRepository;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,8 @@ import java.util.List;
 public class QuizService {
     @Autowired
     private QuizRepository quizRepository;
+    @Autowired
+    private QuestionRepository questionRepository;
 
     public QuizService(QuizRepository quizRepository) {
 
@@ -24,6 +27,7 @@ public class QuizService {
     }
 
     public List<Quiz> getMyQuizzes(String email) {
+
         return quizRepository.findByCreatorEmail(email);
     }
 
@@ -33,5 +37,24 @@ public class QuizService {
             return false;
         LocalDateTime now = LocalDateTime.now();
         return now.isAfter(quiz.getStartTime()) && now.isBefore(quiz.getEndTime());
+    }
+
+    public String updateQuiz(int quizCode, String name, LocalDateTime start, LocalDateTime end, boolean deleteExisting) {
+        Quiz quiz = quizRepository.findById(quizCode).orElse(null);
+        if (quiz == null)
+            return "חידון לא נמצא";
+        if (LocalDateTime.now().isAfter(quiz.getEndTime()))
+            return "שגיאה: לא ניתן לעדכן חידון לאחר שתאריך הסיום עבר";
+        quiz.setQuizName(name);
+        quiz.setQuizCode(quizCode);
+        quiz.setStartTime(start);
+        quiz.setEndTime(end);
+        quizRepository.save(quiz);
+        if (deleteExisting) {
+            // מחיקת כל השאלות הקיימות של החידון הזה
+            questionRepository.deleteByQuiz_QuizCode(quizCode);
+            return "החידון עודכן והשאלות הקודמות נמחקו. כעת ניתן להעלות קובץ אקסל חדש.";
+        }
+        return "החידון עודכן בהצלחה!";
     }
 }

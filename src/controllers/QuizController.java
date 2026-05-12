@@ -82,4 +82,16 @@ public class QuizController {
     public List<Player> getLeaderboard(@RequestParam int quizId) {
         return playerService.getLeaderboard(quizId);
     }
+
+    @GetMapping("/my-quizzes")
+    public List<Quiz> getMyQuizzes(@RequestParam String email) {
+        return quizService.getMyQuizzes(email);
+    }
+
+    @PostMapping("/update-quiz-details")
+    public String updateQuizDetails(@RequestParam("quizId") int quizId, @RequestParam("name") String name, @RequestParam("start") LocalDateTime start, @RequestParam("end") LocalDateTime end, @RequestParam (value = "deleteExisting", defaultValue = "false") boolean deleteExisting) {
+        return quizService.updateQuiz(quizId, name, start, end, deleteExisting);
+    }
+
+
 }
