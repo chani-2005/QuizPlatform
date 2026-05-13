@@ -18,7 +18,9 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/api/join", "/api/questions", "/api/submitAnswer").permitAll() // דברים שפתוחים לכולם (שחקנים)
                         .anyRequest().authenticated() // כל השאר (ניהול) דורש התחברות
                 )
-                .oauth2Login(withDefaults()); // מפעיל את הכניסה עם גוגל
+                .oauth2Login(oauth2 -> oauth2
+                        .defaultSuccessUrl("/", true)
+                );
 
         return http.build();
     }

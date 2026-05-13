@@ -84,7 +84,7 @@ public class PlayerService {
             return false;
 
         boolean isCorrect = question.getAns1().trim().equalsIgnoreCase(answerText.trim());
-        Player player = playerRepository.findByDisplayName(playerName);
+        Player player = playerRepository.findByDisplayNameAndGameId(playerName, quizId);
 
         if (player != null) {
             if (isCorrect) {

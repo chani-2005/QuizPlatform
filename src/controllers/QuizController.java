@@ -3,6 +3,11 @@ package controllers;
 import Entity.Player;
 import Entity.Question;
 import Entity.Quiz;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.server.ResponseStatusException;
 import repositories.PlayerRepository;
 import repositories.QuestionRepository;
 import repositories.QuizRepository;
@@ -11,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import services.QuizService;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -84,14 +90,42 @@ public class QuizController {
     }
 
     @GetMapping("/my-quizzes")
-    public List<Quiz> getMyQuizzes(@RequestParam String email) {
-        return quizService.getMyQuizzes(email);
-    }
+    public List<Quiz> getMyQuizzes(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        String email = principal.getAttribute("email");
+        return quizService.getQuizzesByAdminEmail(email);
+       }
 
     @PostMapping("/update-quiz-details")
-    public String updateQuizDetails(@RequestParam("quizId") int quizId, @RequestParam("name") String name, @RequestParam("start") LocalDateTime start, @RequestParam("end") LocalDateTime end, @RequestParam (value = "deleteExisting", defaultValue = "false") boolean deleteExisting) {
+    public String updateQuizDetails(@RequestParam("quizId") int quizId, @RequestParam("name") String name, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam("start") LocalDateTime start, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam("end") LocalDateTime end, @RequestParam (value = "deleteExisting", defaultValue = "false") boolean deleteExisting) {
         return quizService.updateQuiz(quizId, name, start, end, deleteExisting);
     }
 
+    @PostMapping("/create-quiz")
+    public Quiz createQuiz(@RequestBody Quiz quiz, @AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null)
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        String email = principal.getAttribute("email");
+        quiz.setCreatorEmail(email);
+        if (quiz.getQuizCode() == 0) {
+            quiz.setQuizCode((int)(Math.random() * 9000) + 1000);
+        }
+        return quizService.saveQuiz(quiz);
+    }
 
+    @PostMapping("/upload-questions")
+    public String uploadQuestions(@RequestParam("file") org.springframework.web.multipart.MultipartFile file, @RequestParam("quizId") int quizId) {
+        try {
+            File tempFile = File.createTempFile("upload-", file.getOriginalFilename());
+            file.transferTo(tempFile);
+
+            excelService.loadQuestionsFromExcel(tempFile.getAbsolutePath(), quizId);
+
+            return "השאלות נטענו בהצלחה מהקובץ!";
+        } catch (Exception e) {
+            return "שגיאה בהעלאת הקובץ: " + e.getMessage();
+        }
+    }
 }

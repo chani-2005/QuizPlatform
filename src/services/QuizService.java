@@ -26,9 +26,12 @@ public class QuizService {
         quizRepository.save(newQuiz);
     }
 
-    public List<Quiz> getMyQuizzes(String email) {
-
+    public List<Quiz> getQuizzesByAdminEmail(String email) {
         return quizRepository.findByCreatorEmail(email);
+    }
+
+    public Quiz saveQuiz(Quiz quiz) {
+        return quizRepository.save(quiz);
     }
 
     public boolean isQuizActive(int quizCode) {

@@ -66,6 +66,10 @@
                 </optgroup>
             </select>
         </div>
+        <div id="leaderboard-bar" style="background: #34495e; color: white; padding: 10px; margin-bottom: 15px; border-radius: 5px; display: flex; gap: 15px; overflow-x: auto;">
+            <span>משתתפים:</span>
+            <div id="players-list-live">טוען משתתפים...</div>
+        </div>
         <button class="btn-player" onclick="joinQuiz()">הצטרף עכשיו</button>
         <br><button onclick="location.reload()" style="background:none; color:gray; font-size:14px; text-decoration:underline;">חזור לתפריט</button>
     </div>
@@ -73,25 +77,28 @@
     <div id="admin-section" style="display:none;">
         <h1>ניהול חידונים</h1>
 
-        <div id="login-required-msg">
+        <div id="login-required-msg" style="display:none;">
             <p>כדי לנהל חידונים, יש להתחבר למערכת:</p>
             <button class="btn-admin" onclick="window.location.href='/oauth2/authorization/google'">
                 🔵 התחברות באמצעות Google
             </button>
         </div>
 
-        <div id="admin-content" style="display:none; text-align: right; background: #eee; padding: 20px; border-radius: 10px;">
-            <h3>➕ יצירת חידון חדש</h3>
-            <input type="text" id="new-quiz-name" placeholder="שם החידון">
-            <input type="datetime-local" id="new-quiz-start" title="שעת התחלה">
-            <input type="datetime-local" id="new-quiz-end" title="שעת סיום">
-            <p style="font-size: 12px;">* העלאת אקסל תתבצע לאחר יצירת החידון</p>
-            <button class="btn-admin" onclick="createNewQuiz()">צור חידון</button>
+        <div id="admin-content" style="display:none;">
+            <div style="background: #ecf0f1; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: right;">
+                <h3>➕ יצירת חידון חדש</h3>
+                <input type="text" id="new-quiz-name" placeholder="שם החידון">
+                <input type="datetime-local" id="new-quiz-start" title="זמן התחלה">
+                <input type="datetime-local" id="new-quiz-end" title="זמן סיום">
+                <button class="btn-admin" onclick="createNewQuiz()">צור חידון</button>
+            </div>
 
             <hr>
             <h3>📋 החידונים שלי</h3>
             <div id="admin-quizzes-list"></div>
         </div>
+
+        <br><button onclick="location.reload()" style="background:none; color:gray; text-decoration:underline;">חזור לתפריט</button>
     </div>
     <div id="quiz-display-area" style="display:none;">
         <div id="player-info-box">
@@ -100,12 +107,15 @@
         </div>
         <hr>
         <div id="question-content"></div>
+<!--        <div id="timer-display" style="font-size: 24px; color: red; font-weight: bold; text-align: center; margin-bottom: 10px;">-->
+<!--            זמן נותר: <span id="seconds">30</span> שניות-->
+<!--        </div>-->
     </div>
 </div>
 
 
 <script>
-    // ... (השארתי את ה-JavaScript אותו דבר, הוא עובד מעולה)
+    let countdownInterval;
     let currentPlayerName = "";
     let currentQuizCode = "";
     let questionsList = [];
@@ -117,38 +127,58 @@
         if(type === 'player') {
             document.getElementById('player-section').style.display = 'block';
         } else {
-            document.getElementById('admin-section').style.display = 'block';
+            // כשלוחצים על מנהל - קודם כל מנסים לטעון את החידונים שלו
+            // אם הוא לא מחובר, השרת יחזיר 401 והפונקציה תשלח אותו לגוגל
+            checkAdminStatus();
         }
     }
 
-    function editQuiz(code) {
-        const shouldDelete = confirm("האם למחוק שאלות קיימות?\nאישור = מחיקה וטעינה מחדש\nביטול = הוספה על הקיים");
+    function checkAdminStatus() {
+        fetch('/api/my-quizzes')
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    // המשתמש לא מחובר - מציגים את אזור ההתחברות
+                    document.getElementById('admin-section').style.display = 'block';
+                    document.getElementById('login-required-msg').style.display = 'block';
+                    document.getElementById('admin-content').style.display = 'none';
+                    return null; // עוצרים כאן
+                }
+                return res.json();
+            })
+            .then(quizzes => {
+                if (quizzes !== null) {
+                    // המשתמש מחובר - מציגים את התוכן והחידונים
+                    document.getElementById('admin-section').style.display = 'block';
+                    document.getElementById('login-required-msg').style.display = 'none';
+                    document.getElementById('admin-content').style.display = 'block';
+                    renderQuizList(quizzes);
+                }
+            })
+            .catch(err => {
+                console.error("שגיאה בבדיקת התחברות:", err);
+                // במקרה של שגיאת תקשורת, נציג בכל זאת את כפתור ההתחברות
+                document.getElementById('admin-section').style.display = 'block';
+                document.getElementById('login-required-msg').style.display = 'block';
+            });
+    }
+
+    function editQuiz(quizCode) {
         const newName = prompt("שם חידון חדש:");
-        const newStart = prompt("זמן התחלה (פורמט: YYYY-MM-DDTHH:MM):");
-        const newEnd = prompt("זמן סיום (פורמט: YYYY-MM-DDTHH:MM):");
+        const newStart = prompt("זמן התחלה (YYYY-MM-DDTHH:MM):");
+        const newEnd = prompt("זמן סיום (YYYY-MM-DDTHH:MM):");
+        const deleteExisting = confirm("האם למחוק את כל השאלות הקיימות ולהעלות חדשות?");
 
         if (newName && newStart && newEnd) {
-            // חשוב: לוודא ששמות הפרמטרים כאן תואמים בדיוק ל-@RequestParam ב-Java
-            const params = new URLSearchParams({
-                quizCode: code,
-                name: newName,
-                start: newStart,
-                end: newEnd,
-                deleteExisting: shouldDelete
-            });
+            // בניית כתובת ה-URL עם הפרמטרים
+            const url = `/api/update-quiz-details?quizId=${quizCode}&name=${encodeURIComponent(newName)}&start=${newStart}&end=${newEnd}&deleteExisting=${deleteExisting}`;
 
-            fetch(`/api/update-quiz-details?${params.toString()}`, { method: 'POST' })
-                .then(async res => {
-                    const text = await res.text();
-                    if (res.ok) {
-                        alert("עודכן בהצלחה: " + text);
-                        loadMyQuizzes();
-                    } else {
-                        // אם יש שגיאה 400, זה ידפיס לנו את ההסבר מהשרת
-                        alert("שגיאה מהשרת (סטטוס " + res.status + "): " + text);
-                    }
+            fetch(url, { method: 'POST' })
+                .then(res => res.text())
+                .then(msg => {
+                    alert(msg);
+                    checkAdminStatus(); // רענון הרשימה
                 })
-                .catch(err => alert("שגיאת תקשורת: " + err));
+                .catch(err => alert("שגיאה בעדכון: " + err));
         }
     }
 
@@ -186,25 +216,55 @@
     // עדכון פונקציית הצגת השאלה (X מתוך Y)
     function displayCurrentQuestion() {
         if (currentQuestionIndex >= questionsList.length) {
-            showSummary(); // אם נגמרו השאלות, עוברים לסיכום
+            showSummary();
             return;
         }
+
         const q = questionsList[currentQuestionIndex];
         questionStartTime = Date.now();
+
+        // ערבוב תשובות
         let answers = [q.ans1, q.ans2, q.ans3, q.ans4].sort(() => Math.random() - 0.5);
 
         document.getElementById('question-content').innerHTML = `
+        <div id="timer-display" style="font-size: 20px; color: red; font-weight: bold;">
+            זמן נותר: <span id="seconds">30</span> שניות
+        </div>
         <h3 style="color: #7f8c8d;">שאלה ${currentQuestionIndex + 1} מתוך ${questionsList.length}</h3>
         <h2 style="font-size: 24px; margin-bottom: 20px;">${q.content}</h2>
         <div class="options-grid" id="options-container">
             ${answers.map(ans => `
-                <button class="btn-option" onclick="submitAnswer(this, '${ans.replace(/'/g, "\\'")}', ${q.questionId})">
+                <button class="btn-option" onclick="handleAnswerClick(this, '${ans.replace(/'/g, "\\'")}', ${q.questionId})">
                     ${ans}
                 </button>
             `).join('')}
         </div>`;
+
+        startTimer(); // <<< חשוב: קריאה לפונקציה כדי שהשעון יתחיל לרוץ!
     }
 
+    function startTimer() {
+        let timeLeft = 30;
+        if(window.quizInterval) clearInterval(window.quizInterval);
+
+        window.quizInterval = setInterval(() => {
+            timeLeft--;
+            const secElem = document.getElementById('seconds');
+            if(secElem) secElem.innerText = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(window.quizInterval);
+                alert("נגמר הזמן!");
+                currentQuestionIndex++; // מעבר לשאלה הבאה
+                displayCurrentQuestion();
+            }
+        }, 1000);
+    }
+
+    function handleAnswerClick(btn, ans, qId) {
+        clearInterval(window.quizInterval); // עצירת הטיימר מיד עם הלחיצה!
+        submitAnswer(btn, ans, qId); // הפונקציה המקורית שלך ששולחת לשרת
+    }
     // עדכון שליחת תשובה ללא ALERT
     function submitAnswer(buttonElement, ans, id) {
         let time = Date.now() - questionStartTime;
@@ -268,29 +328,34 @@
         const start = document.getElementById('new-quiz-start').value;
         const end = document.getElementById('new-quiz-end').value;
 
-        if(!name || !start || !end) { alert("נא למלא את כל פרטי החידון"); return; }
+        if(!name || !start || !end) { alert("נא למלא שם וזמנים"); return; }
 
         fetch('/api/create-quiz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quizName: name, startTime: start, endTime: end })
+            body: JSON.stringify({
+                quizName: name,
+                startTime: start,
+                endTime: end
+            })
         })
             .then(res => {
-                if (res.status === 401 || res.status === 403) {
-                    alert("עליך להתחבר עם גוגל קודם!");
-                    return;
-                }
+                if (!res.ok) throw new Error("שגיאה ביצירת החידון");
                 return res.json();
             })
-            .then(data => {
-                if(data) {
-                    alert("החידון נוצר בהצלחה! קוד החידון: " + data.quizCode);
-                    loadMyQuizzes(); // טעינה מחדש של הרשימה
-                }
-            })
-            .catch(err => alert("שגיאה ביצירת החידון. וודא שאתה מחובר."));
-    }
+            .then(quiz => {
+                alert(`החידון "${quiz.quizName}" נוצר בהצלחה! מספר החידון: ${quiz.quizCode}`);
 
+                // ניקוי השדות
+                document.getElementById('new-quiz-name').value = '';
+                document.getElementById('new-quiz-start').value = '';
+                document.getElementById('new-quiz-end').value = '';
+
+                // רענון הרשימה כדי שהחידון החדש יופיע מיד עם כפתור האקסל
+                checkAdminStatus();
+            })
+            .catch(err => alert(err.message));
+    }
     // עדכון טעינת החידונים - עכשיו לא צריך לשלוח מייל, השרת יודע מי את מהגוגל!
     function loadMyQuizzes() {
         fetch('/api/my-quizzes') // השרת יזהה את המשתמש מה-Session של גוגל
@@ -319,6 +384,85 @@
                 });
             });
     }
+
+    // פונקציה להצגת רשימת החידונים עם כפתורי פעולה
+    function renderQuizList(quizzes) {
+        const list = document.getElementById('admin-quizzes-list');
+        list.innerHTML = ''; // ניקוי הרשימה הישנה
+
+        quizzes.forEach(q => {
+            const card = document.createElement('div');
+            card.style = "border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #f9f9f9;";
+            card.innerHTML = `
+            <div style="display: flex; justify-content: space-between;">
+                <div>
+                    <strong>${q.quizName}</strong> (קוד: ${q.quizCode}) [cite: 6]
+                    <br><small>בתוקף מ: ${new Date(q.startTime).toLocaleString()} עד: ${new Date(q.endTime).toLocaleString()}</small> [cite: 9]
+                </div>
+                <div>
+                    <button onclick="editQuiz(${q.quizCode})" style="background: #f39c12; color: white;">🔧 עדכון זמן/שם</button> [cite: 14]
+                </div>
+            </div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd;">
+                <label>טעינת שאלות (Excel):</label> [cite: 7]
+                <input type="file" id="file-${q.quizCode}" accept=".xlsx, .xls">
+                <button onclick="uploadExcel(${q.quizCode})" style="background: #27ae60; color: white;">📤 שלח קובץ</button> [cite: 14]
+            </div>
+        `;
+            list.appendChild(card);
+        });
+    }
+    // פונקציה לשליחת קובץ האקסל לשרת
+    function uploadExcel(quizId) {
+        const fileInput = document.getElementById(`file-${quizId}`);
+        if (fileInput.files.length === 0) {
+            alert("נא לבחור קובץ אקסל");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("quizId", quizId);
+
+        fetch('/api/upload-questions', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.text())
+            .then(msg => alert(msg))
+            .catch(err => alert("שגיאה בהעלאה: " + err));
+    }
+
+    function updateLiveLeaderboard() {
+        if (!currentQuizCode) return;
+
+        fetch(`/api/leaderboard?quizId=${currentQuizCode}`)
+            .then(res => res.json())
+            .then(players => {
+                const listDiv = document.getElementById('players-list-live');
+                listDiv.innerHTML = players.map(p => `
+                <span style="border-left: 1px solid #7f8c8d; padding-left: 10px;">
+                    <img src="${p.imagePath}" width="20" style="border-radius:50%">
+                    ${p.displayName}: <b>${p.score}</b>
+                </span>
+            `).join('');
+            });
+    }
+
+    // הפעלה אוטומטית כל 2 שניות (Asynchronous)
+    setInterval(() => {
+        if (currentQuizCode) { // רק אם אנחנו בתוך משחק
+            fetch(`/api/leaderboard?quizId=${currentQuizCode}`)
+                .then(res => res.json())
+                .then(players => {
+                    const list = document.getElementById('players-list-top');
+                    list.innerHTML = players.map(p =>
+                        `<span><img src="${p.imagePath}" width="20"> ${p.displayName}: ${p.score}</span>`
+                    ).join(' | ');
+                });
+        }
+    }, 3000); // מעדכן כל 3 שניות את כולם
+    setInterval(updateLiveLeaderboard, 2000);
 </script>
 </body>
 </html>
